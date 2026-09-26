@@ -1,0 +1,86 @@
+# Maintainer: Echo J. <aidas957 at gmail dot com>
+# Contributor: Paragoumba <aur at paragoumba dot fr>
+# Contributor: Renaud Littolff <rlittolff@gmail.com>
+
+# shellcheck shell=bash disable=SC2034,SC2164
+
+pkgname=proton-pass
+pkgver=1.41.1
+pkgrel=2
+pkgdesc="Open-source and secure identity manager"
+arch=('aarch64' 'x86_64')
+url="https://proton.me/pass"
+license=('GPL-3.0-or-later')
+depends=('bash' 'gcc-libs' 'glibc' 'electron39-bin')
+makedepends=('nodejs-lts-jod' 'rustup' 'yarn')
+conflicts=('proton-pass-bin')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/${pkgname}@${pkgver}.tar.gz"
+        "proton-pass.desktop")
+sha256sums=('94dd37d17624b0500beea405b42cc02e0d9506df2c773f6f48c4e73ef9f0fdbf'
+            '501210c67fc921a2fb4ba591980192ad1da60e26fb6b2fd7d68aad4075eafac7')
+
+prepare() {
+    cd WebClients-${pkgname}-${pkgver}
+
+    # Limit workspace applications to avoid mysterious dependency issues
+    sed -i 's@"applications/\*",@"applications/pass*",@' package.json
+
+    # Bypass pass-desktop-native build script (removes npm/rustup requirement and Rust target hardcoding)
+    sed -i 's@build"@build:napi \&\& yarn run build:host"@' applications/pass-desktop/package.json
+
+    # Skip electron-forge in build step (needed for .asar size improvement below)
+    sed -i 's@ && electron-forge package@@' applications/pass-desktop/package.json
+
+    # HACK: Make the tray icon work under system Electron
+    sed -i 's@process.resourcesPath@"/usr/share/proton-pass"@' applications/pass-desktop/src/main.ts
+
+    # system-electron fix: 'electron39 /path/app.asar' → process.defaultApp=true →
+    # app.isPackaged=false → isProdEnv()=false, which disables the SameSite=None
+    # cookie rewrite that COOKIE auth mode requires (main.ts gate) — breaking sign-in.
+    sed -i 's@export const isProdEnv = () => app.isPackaged;@export const isProdEnv = () => app.isPackaged || process.env.PROTON_PASS_SYSTEM_PACKAGE === "1";@' applications/pass-desktop/src/utils/platform.ts
+    # aarch64: build-local Rust toolchain ('rust' makedep is unavailable in Arch Linux ARM repos)
+    export RUSTUP_HOME="$srcdir/.rustup"
+    rustup toolchain install stable --profile minimal --no-self-update
+
+    # Use sharp's prebuilt ARM64 binaries even when system libvips is installed
+    export SHARP_IGNORE_GLOBAL_LIBVIPS=1
+
+    # Avoid yarn 4 npm minimal-age-gate failures during install
+    sed -i 's/^npmMinimalAgeGate: .*/npmMinimalAgeGate: 0/' .yarnrc.yml
+}
+
+build() {
+    cd WebClients-${pkgname}-${pkgver}/applications/pass-desktop
+
+    export RUSTUP_HOME="$srcdir/.rustup" RUSTUP_TOOLCHAIN=stable SHARP_IGNORE_GLOBAL_LIBVIPS=1
+
+    # HACK: Update to a non-broken nan version (implicitly runs yarn install)
+    yarn up -R nan
+
+    yarn run build:desktop
+
+    # HACK: Move Rust target directory to avoid asset-relocator including it (reduces size of .asar file)
+    {
+        mv native/target ../rust-target
+        NODE_ENV=production yarn exec electron-forge package
+        mv ../rust-target native/target
+    }
+}
+
+package() {
+    cd WebClients-${pkgname}-${pkgver}/applications/pass-desktop
+
+    # Copy the main application archive/assets
+    install -d "${pkgdir}"/usr/share/${pkgname}
+    cp -ar "out/Proton Pass-linux-"*/resources/* -t "${pkgdir}"/usr/share/${pkgname}
+
+    # Set up the wrapper script
+    install -d "${pkgdir}"/usr/bin
+    echo -e '#!/bin/bash\n\nexport PROTON_PASS_SYSTEM_PACKAGE=1\nexec /usr/bin/electron39 /usr/share/proton-pass/app.asar "$@"' \
+        | tee "${pkgdir}"/usr/bin/${pkgname} > /dev/null
+    chmod +x "${pkgdir}"/usr/bin/${pkgname}
+
+    # Copy the desktop file (and associated icon)
+    install -Dm644 assets/logo.svg "${pkgdir}"/usr/share/pixmaps/${pkgname}.svg
+    install -Dm644 "${srcdir}"/${pkgname}.desktop -t "${pkgdir}"/usr/share/applications
+}
