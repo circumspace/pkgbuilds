@@ -1,4 +1,4 @@
-# Unofficial Arch (aarch64) PKGBUILDs: Proton Pass Desktop
+# Unofficial Arch PKGBUILDs — Proton Pass Desktop for aarch64 (and friends)
 
 Working **Proton Pass Desktop** builds for **Arch Linux ARM (aarch64)** — upstream ships
 no arm64 Linux binaries, and the stock AUR recipe fails sign-in with
@@ -10,8 +10,8 @@ linux-arm64 artifacts), since Arch ARM's `extra` repo has no `electron` package.
 ## Install
 
 ```bash
-git clone <this-repo-url> proton-pass-arm
-cd proton-pass-arm
+git clone https://github.com/circumspace/pkgbuilds.git
+cd pkgbuilds
 
 # 1) Electron runtime (dependency of the pass package)
 cd electron39-bin && makepkg -si && cd ..
@@ -22,7 +22,7 @@ cd proton-pass && makepkg -si
 ```
 
 Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
-may be attached to [GitHub Releases](../../releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
+may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
 
 ## What's different from the AUR `proton-pass` recipe (and why)
 
@@ -60,7 +60,7 @@ may be attached to [GitHub Releases](../../releases) — then: `sudo pacman -U <
 
 ```bash
 cd proton-pass
-npm/pkgver=X.Y.Z  # bump in PKGBUILD
+# bump pkgver/pkgrel (and source url) in PKGBUILD
 updpkgsums         # regenerate checksums from the pinned archive URL
 makepkg -si
 ```
