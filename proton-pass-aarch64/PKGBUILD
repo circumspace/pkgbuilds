@@ -4,23 +4,25 @@
 
 # shellcheck shell=bash disable=SC2034,SC2164
 
-pkgname=proton-pass
+pkgname=proton-pass-aarch64
+_upstream=proton-pass
 pkgver=1.41.1
-pkgrel=2
+pkgrel=1
 pkgdesc="Open-source and secure identity manager"
-arch=('aarch64' 'x86_64')
+arch=('aarch64')
 url="https://proton.me/pass"
 license=('GPL-3.0-or-later')
 depends=('bash' 'gcc-libs' 'glibc' 'electron39-bin')
 makedepends=('nodejs-lts-jod' 'rustup' 'yarn')
-conflicts=('proton-pass-bin')
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/${pkgname}@${pkgver}.tar.gz"
+provides=('proton-pass')
+conflicts=('proton-pass' 'proton-pass-bin')
+source=("${_upstream}-${pkgver}.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/${_upstream}@${pkgver}.tar.gz"
         "proton-pass.desktop")
 sha256sums=('94dd37d17624b0500beea405b42cc02e0d9506df2c773f6f48c4e73ef9f0fdbf'
             '501210c67fc921a2fb4ba591980192ad1da60e26fb6b2fd7d68aad4075eafac7')
 
 prepare() {
-    cd WebClients-${pkgname}-${pkgver}
+    cd WebClients-${_upstream}-${pkgver}
 
     # Limit workspace applications to avoid mysterious dependency issues
     sed -i 's@"applications/\*",@"applications/pass*",@' package.json
@@ -50,7 +52,7 @@ prepare() {
 }
 
 build() {
-    cd WebClients-${pkgname}-${pkgver}/applications/pass-desktop
+    cd WebClients-${_upstream}-${pkgver}/applications/pass-desktop
 
     export RUSTUP_HOME="$srcdir/.rustup" RUSTUP_TOOLCHAIN=stable SHARP_IGNORE_GLOBAL_LIBVIPS=1
 
@@ -68,19 +70,19 @@ build() {
 }
 
 package() {
-    cd WebClients-${pkgname}-${pkgver}/applications/pass-desktop
+    cd WebClients-${_upstream}-${pkgver}/applications/pass-desktop
 
     # Copy the main application archive/assets
-    install -d "${pkgdir}"/usr/share/${pkgname}
-    cp -ar "out/Proton Pass-linux-"*/resources/* -t "${pkgdir}"/usr/share/${pkgname}
+    install -d "${pkgdir}"/usr/share/${_upstream}
+    cp -ar "out/Proton Pass-linux-"*/resources/* -t "${pkgdir}"/usr/share/${_upstream}
 
     # Set up the wrapper script
     install -d "${pkgdir}"/usr/bin
     echo -e '#!/bin/bash\n\nexport PROTON_PASS_SYSTEM_PACKAGE=1\nexec /usr/bin/electron39 /usr/share/proton-pass/app.asar "$@"' \
-        | tee "${pkgdir}"/usr/bin/${pkgname} > /dev/null
-    chmod +x "${pkgdir}"/usr/bin/${pkgname}
+        | tee "${pkgdir}"/usr/bin/${_upstream} > /dev/null
+    chmod +x "${pkgdir}"/usr/bin/${_upstream}
 
     # Copy the desktop file (and associated icon)
-    install -Dm644 assets/logo.svg "${pkgdir}"/usr/share/pixmaps/${pkgname}.svg
-    install -Dm644 "${srcdir}"/${pkgname}.desktop -t "${pkgdir}"/usr/share/applications
+    install -Dm644 assets/logo.svg "${pkgdir}"/usr/share/pixmaps/${_upstream}.svg
+    install -Dm644 "${srcdir}"/${_upstream}.desktop -t "${pkgdir}"/usr/share/applications
 }
