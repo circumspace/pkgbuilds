@@ -10,7 +10,22 @@ own `PKGBUILD` and, where there is more to say, a `README.md`.
 | [`electron39-bin`](electron39-bin/) | aarch64 | Electron 39 runtime for `proton-pass` |
 | [`proton-pass-biometrics`](proton-pass-biometrics/) | x86_64 | Proton Pass Desktop with fingerprint unlock (fprintd + polkit) |
 
-## Build and install
+## Install with paru
+
+paru (2.0 or later) can track this repo like the AUR. Add it to
+`/etc/paru.conf` or `~/.config/paru/paru.conf`:
+
+```ini
+[circumspace]
+Url = https://github.com/circumspace/pkgbuilds
+```
+
+Then `paru -Sya` fetches it and `paru -S <package>` builds and installs a
+package, dependencies from this repo included. `paru -Syu` picks up updates.
+Packages here take priority over AUR packages of the same name, so `proton-pass`
+comes from this repo once it is added.
+
+## Build and install by hand
 
 ```bash
 git clone https://github.com/circumspace/pkgbuilds.git
