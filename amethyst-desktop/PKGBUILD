@@ -1,0 +1,75 @@
+# Maintainer: hermeticvm <215889057+hermeticvm@users.noreply.github.com>
+# Upstream: https://github.com/vitorpamplona/amethyst (Nostr client, Compose Desktop build)
+
+pkgname=amethyst-desktop
+pkgver=1.18.0
+pkgrel=1
+pkgdesc='Nostr client for desktop - Compose Desktop app with bundled JRE'
+arch=('x86_64' 'aarch64')
+
+url='https://amethyst.social'
+license=('MIT')
+provides=('amethyst')
+conflicts=('amethyst')
+
+# Repackaged prebuilt binaries; don't strip or split a debug package
+options=('!strip' '!debug')
+
+# Mirrors the upstream .deb Depends field (jpackage runtime analysis):
+# libasound2->alsa-lib, libbrotli->brotli, libbsd->libbsd, libbz2->bzip2,
+# libexpat->expat, libfontconfig->fontconfig, libfreetype->freetype2,
+# libgl/libglvnd/libglx->libglvnd, libpng->libpng, libx11->libx11,
+# libxau->libxau, libxcb->libxcb, libxdmcp->libxdmcp, libxext->libxext,
+# libxi->libxi, libxrender->libxrender, libxtst->libxtst, zlib->zlib,
+# gstreamer1.0-plugins-{base,good}, xdg-utils. glibc/gcc-libs omitted.
+depends=(
+  alsa-lib
+  brotli
+  bzip2
+  expat
+  fontconfig
+  freetype2
+  gst-plugins-base
+  gst-plugins-good
+  libbsd
+  libglvnd
+  libpng
+  libx11
+  libxau
+  libxcb
+  libxdmcp
+  libxext
+  libxi
+  libxrender
+  libxtst
+  xdg-utils
+  zlib
+)
+optdepends=('gst-libav: additional audio/video codecs (upstream Recommends)')
+
+source_x86_64=("https://github.com/vitorpamplona/amethyst/releases/download/v${pkgver}/amethyst-desktop-${pkgver}-linux-x64.deb")
+sha256sums_x86_64=('ffb5aa09c6604ad10db04d4363770eb1ab32c9cbaefb39632122ff2c0e1f6d33')
+source_aarch64=("https://github.com/vitorpamplona/amethyst/releases/download/v${pkgver}/amethyst-desktop-${pkgver}-linux-arm64.deb")
+sha256sums_aarch64=('d8a0989d0768fc61d11ffb6287a143e09535d284c4e061eb9f9c7d5813accf84')
+
+# The .deb is a jpackage layout: /opt/amethyst/{bin,lib/{app,runtime}},
+# bundled JRE under lib/runtime. Upstream ships no /usr integration
+# (its postinst registers the desktop file via xdg-desktop-menu), so we do it.
+package() {
+  cd "${srcdir}"
+
+  bsdtar -xOf amethyst-desktop-*.deb data.tar.xz | bsdtar -xf - -C "${pkgdir}"
+
+  # CLI launcher; the jpackage binary resolves its real path, symlinks are safe
+  install -d "${pkgdir}/usr/bin"
+  ln -s /opt/amethyst/bin/Amethyst "${pkgdir}/usr/bin/amethyst"
+
+  install -Dm644 "${pkgdir}/opt/amethyst/lib/Amethyst.png" \
+    "${pkgdir}/usr/share/icons/hicolor/512x512/apps/Amethyst.png"
+  install -Dm644 "${pkgdir}/opt/amethyst/lib/amethyst-Amethyst.desktop" \
+    "${pkgdir}/usr/share/applications/amethyst.desktop"
+  sed -i 's|^Icon=.*|Icon=Amethyst|' "${pkgdir}/usr/share/applications/amethyst.desktop"
+
+  install -Dm644 "${pkgdir}/opt/amethyst/lib/app/resources/licenses/LICENSE-MIT-amethyst.txt" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

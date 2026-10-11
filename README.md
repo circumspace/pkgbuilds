@@ -7,10 +7,14 @@ no arm64 Linux binaries, and the stock AUR recipe fails sign-in with
 Includes `electron39-bin` (the pinned Electron 39.8.10 from upstream's official
 linux-arm64 artifacts), since Arch ARM's `extra` repo has no `electron` package.
 
+Also `amethyst-desktop` — the [vitorpamplona/amethyst](https://github.com/vitorpamplona/amethyst)
+Nostr client for desktop (Compose Desktop, bundled JRE), repackaged from upstream's
+official `.deb` releases for x86_64 and aarch64: `cd amethyst-desktop && makepkg -si`.
+
 ## Install
 
 ```bash
-git clone https://github.com/circumspace/pkgbuilds.git
+git clone https://git.circum.space/circumspace/pkgbuilds.git
 cd pkgbuilds
 
 # 1) Electron runtime (dependency of the pass package)
@@ -22,7 +26,7 @@ cd proton-pass && makepkg -si
 ```
 
 Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
-may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
+may be attached to [Gitea Releases](https://git.circum.space/circumspace/pkgbuilds/releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
 
 ## What's different from the AUR `proton-pass` recipe (and why)
 

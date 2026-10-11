@@ -2,6 +2,7 @@ src/
 pkg/
 *.tar.gz
 *.tar.xz
+*.deb
 *.pkg.tar.*
 *.sig
 .SRCINFO.tmp
