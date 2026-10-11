@@ -1,11 +1,20 @@
-# Unofficial Arch PKGBUILDs — Proton Pass Desktop for aarch64 (and friends)
+# Unofficial Arch PKGBUILDs — Proton Pass Desktop
 
-Working **Proton Pass Desktop** builds for **Arch Linux ARM (aarch64)** — upstream ships
-no arm64 Linux binaries, and the stock AUR recipe fails sign-in with
-*"Your session could not be resumed."* here.
+Source-built **Proton Pass Desktop** packages for Arch Linux:
 
-Includes `electron39-bin` (the pinned Electron 39.8.10 from upstream's official
-linux-arm64 artifacts), since Arch ARM's `extra` repo has no `electron` package.
+| Directory | Arch | What it is |
+|---|---|---|
+| `proton-pass-aarch64/` | aarch64 | Proton Pass for **Arch Linux ARM** on system Electron, with the cookie sign-in fix |
+| `electron39-bin/` | aarch64 | Electron 39.8.10 runtime for `proton-pass-aarch64` |
+| `proton-pass-biometrics/` | x86_64 | Proton Pass with **fingerprint unlock** (fprintd + polkit), bundled Electron — see its [README](proton-pass-biometrics/README.md) |
+
+Both Proton Pass packages install `/usr/bin/proton-pass` and conflict with
+`proton-pass` / `proton-pass-bin`; each builds for one architecture only.
+
+The rest of this README covers the aarch64 packages. Upstream ships no arm64
+Linux binaries, and the stock AUR recipe fails sign-in there with
+*"Your session could not be resumed."* `electron39-bin` is the pinned upstream
+linux-arm64 Electron, since Arch ARM's `extra` repo has no `electron` package.
 
 ## Install
 
@@ -18,10 +27,10 @@ cd electron39-bin && makepkg -si && cd ..
 
 # 2) Proton Pass (source build, ~3-5 min; needs nodejs-lts-jod, rustup, yarn from
 #    extra/ and network for the Rust toolchain fetch)
-cd proton-pass && makepkg -si
+cd proton-pass-aarch64 && makepkg -si
 ```
 
-Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
+Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` (built before the rename) / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
 may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
 
 ## What's different from the AUR `proton-pass` recipe (and why)
@@ -59,7 +68,7 @@ may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/re
 ## Updating versions
 
 ```bash
-cd proton-pass
+cd proton-pass-aarch64
 # bump pkgver/pkgrel (and source url) in PKGBUILD
 updpkgsums         # regenerate checksums from the pinned archive URL
 makepkg -si
