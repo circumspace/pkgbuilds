@@ -6,8 +6,8 @@ own `PKGBUILD` and, where there is more to say, a `README.md`.
 
 | Package | Arch | Notes |
 |---|---|---|
-| [`proton-pass-aarch64`](proton-pass-aarch64/) | aarch64 | Proton Pass Desktop for Arch Linux ARM on system Electron |
-| [`electron39-bin`](electron39-bin/) | aarch64 | Electron 39 runtime for `proton-pass-aarch64` |
+| [`proton-pass`](proton-pass/) | aarch64 | Proton Pass Desktop for Arch Linux ARM on system Electron |
+| [`electron39-bin`](electron39-bin/) | aarch64 | Electron 39 runtime for `proton-pass` |
 | [`proton-pass-biometrics`](proton-pass-biometrics/) | x86_64 | Proton Pass Desktop with fingerprint unlock (fprintd + polkit) |
 
 ## Build and install

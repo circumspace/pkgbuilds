@@ -1,4 +1,4 @@
-# proton-pass-aarch64
+# proton-pass (aarch64)
 
 Source-built Proton Pass Desktop for **Arch Linux ARM (aarch64)**, running on
 system Electron (`electron39-bin` from this repo). Upstream ships no arm64 Linux
@@ -17,10 +17,10 @@ cd electron39-bin && makepkg -si && cd ..
 
 # 2) Proton Pass (source build, ~3-5 min; needs nodejs-lts-jod, rustup, yarn from
 #    extra/ and network for the Rust toolchain fetch)
-cd proton-pass-aarch64 && makepkg -si
+cd proton-pass && makepkg -si
 ```
 
-Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` (built before the rename) / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
+Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
 may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
 
 ## What's different from the AUR `proton-pass` recipe (and why)
@@ -58,7 +58,7 @@ may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/re
 ## Updating versions
 
 ```bash
-cd proton-pass-aarch64
+cd proton-pass
 # bump pkgver/pkgrel (and source url) in PKGBUILD
 updpkgsums         # regenerate checksums from the pinned archive URL
 makepkg -si
