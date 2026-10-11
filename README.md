@@ -22,8 +22,8 @@ Url = https://github.com/circumspace/pkgbuilds
 
 Then `paru -Sya` fetches it and `paru -S <package>` builds and installs a
 package, dependencies from this repo included. `paru -Syu` picks up updates.
-Packages here take priority over AUR packages of the same name, so `proton-pass`
-comes from this repo once it is added.
+Packages here take priority over AUR packages of the same name, so on aarch64
+`proton-pass` comes from this repo once it is added.
 
 ## Build and install by hand
 
