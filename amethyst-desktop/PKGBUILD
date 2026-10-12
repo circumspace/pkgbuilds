@@ -3,7 +3,7 @@
 
 pkgname=amethyst-desktop
 pkgver=1.18.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Nostr client for desktop - Compose Desktop app with bundled JRE'
 arch=('x86_64' 'aarch64')
 
@@ -22,6 +22,10 @@ options=('!strip' '!debug')
 # libxau->libxau, libxcb->libxcb, libxdmcp->libxdmcp, libxext->libxext,
 # libxi->libxi, libxrender->libxrender, libxtst->libxtst, zlib->zlib,
 # gstreamer1.0-plugins-{base,good}, xdg-utils. glibc/gcc-libs omitted.
+# Added beyond the .deb Depends: the app execs 'secret-tool' for its Linux
+# keychain backend (upstream cli/secrets/SecretStore.kt) — a subprocess dep
+# invisible to jpackage's static runtime analysis. Needs a Secret Service
+# daemon at runtime; see optdepends.
 depends=(
   alsa-lib
   brotli
@@ -34,7 +38,7 @@ depends=(
   libbsd
   libglvnd
   libpng
-  libx11
+  libsecret
   libxau
   libxcb
   libxdmcp
@@ -45,7 +49,8 @@ depends=(
   xdg-utils
   zlib
 )
-optdepends=('gst-libav: additional audio/video codecs (upstream Recommends)')
+optdepends=('gnome-keyring: Secret Service daemon for the keychain backend'
+  'gst-libav: additional audio/video codecs (upstream Recommends)')
 
 source_x86_64=("https://github.com/vitorpamplona/amethyst/releases/download/v${pkgver}/amethyst-desktop-${pkgver}-linux-x64.deb")
 sha256sums_x86_64=('ffb5aa09c6604ad10db04d4363770eb1ab32c9cbaefb39632122ff2c0e1f6d33')
