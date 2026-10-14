@@ -3,14 +3,12 @@
 
 pkgname=amethyst-desktop
 pkgver=1.18.0
-pkgrel=2
+pkgrel=3
 pkgdesc='Nostr client for desktop - Compose Desktop app with bundled JRE'
 arch=('x86_64' 'aarch64')
 
 url='https://amethyst.social'
 license=('MIT')
-provides=('amethyst')
-conflicts=('amethyst')
 
 # Repackaged prebuilt binaries; don't strip or split a debug package
 options=('!strip' '!debug')
