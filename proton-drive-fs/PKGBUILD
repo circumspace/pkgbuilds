@@ -18,6 +18,8 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/khaosdoctor/proton-driv
 sha256sums=('de9f8f3869210ba0559065505c834a956fa1bb269fb0ebf870b07411f83f0a5d')
 
 prepare() {
+  # Tarball extracts as proton-drive-linux-fs-${pkgver}, rename to match pkgname
+  mv "${srcdir}/proton-drive-linux-fs-${pkgver}" "${srcdir}/${pkgname}-${pkgver}"
   cd "${srcdir}/${pkgname}-${pkgver}"
   go mod download
 }
