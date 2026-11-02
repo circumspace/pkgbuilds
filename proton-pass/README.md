@@ -1,10 +1,9 @@
 # proton-pass (aarch64)
 
-Source-built Proton Pass Desktop for **Arch Linux ARM (aarch64)**, running on
-system Electron (`electron39-bin` from this repo). Upstream ships no arm64 Linux
-binaries, and the stock AUR recipe fails sign-in there with
-*"Your session could not be resumed."* `electron39-bin` is the pinned upstream
-linux-arm64 Electron, since Arch ARM's `extra` repo has no `electron` package.
+Proton Pass Desktop 1.43.0, source-built for **Arch Linux ARM (aarch64)**
+and launched with system Electron 44.4.3 from `electron44-bin`. This is the
+unmodified upstream application apart from the packaging adaptations below; it
+does not include the Linux biometrics patches from `proton-pass-biometrics`.
 
 ## Install
 
@@ -12,55 +11,55 @@ linux-arm64 Electron, since Arch ARM's `extra` repo has no `electron` package.
 git clone https://github.com/circumspace/pkgbuilds.git
 cd pkgbuilds
 
-# 1) Electron runtime (dependency of the pass package)
-cd electron39-bin && makepkg -si && cd ..
+# Install the Electron runtime first.
+cd electron44-bin && makepkg -si && cd ..
 
-# 2) Proton Pass (source build, ~3-5 min; needs nodejs-lts-jod, rustup, yarn from
-#    extra/ and network for the Rust toolchain fetch)
+# Build and install Proton Pass.
 cd proton-pass && makepkg -si
 ```
 
-Prebuilt `proton-pass-1.41.1-2-aarch64.pkg.tar.xz` / `electron39-bin-39.8.10-1-aarch64.pkg.tar.xz`
-may be attached to [GitHub Releases](https://github.com/circumspace/pkgbuilds/releases) — then: `sudo pacman -U <file>.pkg.tar.xz`.
+The build dependencies are `nodejs-lts-krypton` (Node 24), `corepack`, and
+`rustup`. Building also requires network access for Corepack's pinned pnpm
+versions, npm packages, the Rust toolchain and crates, and Electron Forge's
+build-time Electron download. The Rust toolchain and Cargo cache are kept under
+`$srcdir`; they do not change the builder's rustup installation.
 
-## What's different from the AUR `proton-pass` recipe (and why)
+The 1.43.0 package and Electron dependency built under aarch64 QEMU. A
+headless QEMU launch reached native-messaging startup, but the Chromium GPU or
+renderer process failed; graphical startup and sign-in remain unverified on
+native ARM hardware.
 
-- **Sign-in fix (the big one).** The desktop app authenticates via cookies and rewrites
-  them `SameSite=None` **only when `app.isPackaged`** is true — which a system-Electron
-  launch (`electron39 /usr/share/proton-pass/app.asar`) never is. Without the rewrite
-  Chromium drops every auth cookie (renderer is `file://`), login dies at the first
-  API call: `lock/check` → 401, cookie-mode `auth/refresh` → 422, session torn down.
-  Patched: `isProdEnv()` also honors `PROTON_PASS_SYSTEM_PACKAGE=1`, exported by the
-  wrapper. Cookie-mode sign-in validation in progress on aarch64 (token-mode path
-  confirmed working with the same build); updated to "verified" after final test.
-  (Upstream report: linked issue/PR placeholder.)
-- **`electron39-bin`** instead of `electron`: exact upstream pin (39.8.10), official
-  linux-arm64 zip; Arch ARM has no system `electron`.
-- **`rustup` + build-local toolchain** (`RUSTUP_HOME="$srcdir/.rustup"`) instead of `rust`:
-  no `rust` package on archlinuxarm.org; builder's home untouched.
-- **`SHARP_IGNORE_GLOBAL_LIBVIPS=1`**: otherwise sharp's postinstall enters a node-gyp
-  build yarn 4 refuses; prebuilt arm64 binaries are used.
-- **`npmMinimalAgeGate: 0`** (build-local): age gate breaks reproducible installs.
-- **Berry env-var form** `NODE_ENV=production yarn exec electron-forge package`:
-  `yarn exec 'NODE_ENV=… pkg'` silently drops the env var under yarn 4 and packages a dev build.
-- **Versioned source + pinned sha256**: codeload re-serializes tag tarballs, breaking
-  checksums over time (this is what broke the current AUR recipe at 1.38.2).
+## Packaging details
 
-## Known issues / notes
-
-- Upstream `proton-pass-desktop` does not build or test linux-aarch64; this recipe fills
-  that gap for the napi native module (compiled via build-local rustup). If a future
-  release hardcodes targets again, `native/build.js` is where to look.
-- Tray icon under system Electron needs the `resourcesPath` sed already in the PKGBUILD.
-- Legacy-auth workaround (not recommended, kept for reference):
-  `localStorage.setItem('ps_legacy','1')` → token mode; bypasses the cookie path entirely.
+- The wrapper runs `/usr/bin/electron44` with the installed `app.asar`, not a
+  bundled Electron executable. The Forge-produced archive, unpacked native
+  modules, and assets are installed under `/usr/share/proton-pass`.
+- System Electron treats the app as unpackaged. The wrapper sets
+  `PROTON_PASS_SYSTEM_PACKAGE=1` so the production cookie rewrite and other
+  production behavior remain active; the window and tray icons use the installed
+  assets. Cookie-mode sign-in on this release still needs runtime verification
+  on aarch64.
+- The launcher leaves Electron's profile selection unchanged from the previous
+  system-Electron package and advertises the `protonpass://` scheme through its
+  desktop entry. The desktop environment must register or select it as the
+  scheme handler for external login.
+- The Linux native addon and native-messaging host are built for the host ARM
+  architecture with a build-local stable rustup toolchain. The host is installed
+  as `/usr/share/proton-pass/assets/proton_pass_nm_host`; its socket lookup is
+  aligned with the Electron profile (`$XDG_CONFIG_HOME/Proton Pass`, or
+  `~/.config/Proton Pass` by default). Host logs remain under
+  `$XDG_DATA_HOME/Proton Pass` (normally `~/.local/share/Proton Pass`).
+- The release uses pnpm 12.13.0 through Corepack, a filtered workspace install,
+  and the frozen lockfile. Public Proton dependencies resolve through npm. The
+  unpublished `@protontech/logger` 0.0.5 tarball is reconstructed from a pinned
+  WebPackages commit using pnpm 12.4.1 and verified against the lockfile's SHA-512
+  before installation. `SHARP_IGNORE_GLOBAL_LIBVIPS=1` selects sharp's prebuilt
+  ARM binaries rather than a system libvips build.
 
 ## Updating versions
 
-```bash
-cd proton-pass
-# bump pkgver/pkgrel (and source url) in PKGBUILD
-updpkgsums         # regenerate checksums from the pinned archive URL
-makepkg -si
-```
-
+Bump `pkgver` and reset `pkgrel` in `PKGBUILD`, then review upstream's workspace,
+Node/pnpm/Electron versions, native build scripts, runtime paths and production
+handling. Update the WebPackages commit and the expected reconstructed logger
+SHA-512 if the lockfile changes. Regenerate the source checksums and `.SRCINFO`
+after making those changes, then build and verify the package on aarch64.

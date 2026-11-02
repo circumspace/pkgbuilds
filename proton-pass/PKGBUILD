@@ -4,83 +4,117 @@
 
 # shellcheck shell=bash disable=SC2034,SC2164
 
+_logger_commit=6e219abb11d996376792dc2d0f97a0f140c8a163
+_logger_sha512=ca13941f08c6ff0247b5d1802c8ab66ddded4ac37fc9f4f760aa924f644b5b82707b10b36cd14db69c7f0fd60da1c74a2b0df00da784389aee1d252408047b35
+
 pkgname=proton-pass
-pkgver=1.41.1
-pkgrel=2
-pkgdesc="Open-source and secure identity manager"
+pkgver=1.43.0
+pkgrel=1
+pkgdesc='Open-source and secure identity manager'
 arch=('aarch64')
-url="https://proton.me/pass"
+url='https://proton.me/pass'
 license=('GPL-3.0-or-later')
-depends=('bash' 'gcc-libs' 'glibc' 'electron39-bin')
-makedepends=('nodejs-lts-jod' 'rustup' 'yarn')
+depends=('bash' 'gcc-libs' 'glibc' 'electron44-bin')
+makedepends=('nodejs-lts-krypton' 'corepack' 'rustup')
 conflicts=('proton-pass-bin')
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/${pkgname}@${pkgver}.tar.gz"
-        "proton-pass.desktop")
-sha256sums=('94dd37d17624b0500beea405b42cc02e0d9506df2c773f6f48c4e73ef9f0fdbf'
-            '501210c67fc921a2fb4ba591980192ad1da60e26fb6b2fd7d68aad4075eafac7')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/proton-pass@${pkgver}.tar.gz"
+        "proton-webpackages-${_logger_commit}.tar.gz::https://github.com/ProtonMail/WebPackages/archive/${_logger_commit}.tar.gz"
+        'proton-pass.desktop')
+sha512sums=('91631e52b4d704b7de5a71a912464bd9f09f2a0e59157958bc90ba9a3bedb0b68a988070b1547a789167ed096cecb05bc5e92bc18bc64984576d55a350f21fa1'
+            '01c412d82665d95d74ec4c8ee4f907591843ec3450c4c24c00ae4d022dde1f7a28c3ac666d887aebf60ec271790e2c73fa4239e5ac05d9c836695aa6bd206319'
+            '520dc252467eae2462960d4f9182857b620b6e0b6dbc8e1f12ab079b9a1ed63140dcb463ce1e4c24985a3437995e24f5c5355c7fe31e1bcc053606d945eaff6e')
 
 prepare() {
-    cd WebClients-${pkgname}-${pkgver}
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    export RUSTUP_HOME="${srcdir}/.rustup" CARGO_HOME="${srcdir}/.cargo" RUSTUP_TOOLCHAIN=stable
 
-    # Limit workspace applications to avoid mysterious dependency issues
-    sed -i 's@"applications/\*",@"applications/pass*",@' package.json
+    # Reconstruct the unpublished logger tarball exactly as pinned by the lockfile.
+    cd "${srcdir}/WebPackages-${_logger_commit}/packages/logger"
+    mkdir -p node_modules/@protontech
+    local dep
+    for dep in crypto eslint-plugin-enforce-uint8array-arraybuffer oxlint-config prettier-config typescript-config; do
+        ln -sfn "../../../${dep}" "node_modules/@protontech/${dep}"
+    done
+    corepack pnpm@12.4.1 pack --pack-destination "${srcdir}/WebClients-proton-pass-${pkgver}"
+    printf '%s  %s\n' "${_logger_sha512}" \
+        "${srcdir}/WebClients-proton-pass-${pkgver}/protontech-logger-0.0.5.tgz" | sha512sum -c
 
-    # Bypass pass-desktop-native build script (removes npm/rustup requirement and Rust target hardcoding)
-    sed -i 's@build"@build:napi \&\& yarn run build:host"@' applications/pass-desktop/package.json
+    cd "${srcdir}/WebClients-proton-pass-${pkgver}"
 
-    # Skip electron-forge in build step (needed for .asar size improvement below)
+    # Restrict applications; the desktop bundles the Pass web workspace.
+    sed -i 's@- applications/\*@- applications/pass\n    - applications/pass-desktop@' pnpm-workspace.yaml
+    # The tag archive omits this preinstall script; Corepack selects pinned pnpm.
+    sed -i '\@"preinstall": "node utilities/enforce-pnpm/preinstall.mjs",@d' package.json
+    # Public Proton packages come from npm; the unpublished logger is local.
+    sed -i 's|^@protontech:registry=.*|@protontech:registry=https://registry.npmjs.org/|' .npmrc
+    sed -i 's@\(integrity: sha512-yhOUHwjG/wJHtdGALIq2bd3tSsN/yfT3YKqST2RLW4JwexCzbNFNtpx/D9YNocdKKw3wDaeEOJruHSUkCAR7NQ==\)}@\1, tarball: file:protontech-logger-0.0.5.tgz}@' pnpm-lock.yaml
+
+    # Build the native addon and host for this machine rather than using the
+    # upstream build.js, which installs hardcoded targets and invokes npm.
+    sed -i 's@"build": "node build.js"@"build": "pnpm run build:napi \&\& pnpm run build:host"@' \
+        applications/pass-desktop/native/package.json
+    # Run Forge separately, with the cargo target outside the packaged tree.
     sed -i 's@ && electron-forge package@@' applications/pass-desktop/package.json
 
-    # HACK: Make the tray icon work under system Electron
-    sed -i 's@process.resourcesPath@"/usr/share/proton-pass"@' applications/pass-desktop/src/main.ts
-
-    # system-electron fix: 'electron39 /path/app.asar' → process.defaultApp=true →
-    # app.isPackaged=false → isProdEnv()=false, which disables the SameSite=None
-    # cookie rewrite that COOKIE auth mode requires (main.ts gate) — breaking sign-in.
+    # System Electron considers app.asar unpackaged; restore production cookie
+    # handling and use the installed assets for both the window and tray icons.
     sed -i 's@export const isProdEnv = () => app.isPackaged;@export const isProdEnv = () => app.isPackaged || process.env.PROTON_PASS_SYSTEM_PACKAGE === "1";@' applications/pass-desktop/src/utils/platform.ts
-    # aarch64: build-local Rust toolchain ('rust' makedep is unavailable in Arch Linux ARM repos)
-    export RUSTUP_HOME="$srcdir/.rustup"
+    sed -i 's@app.isPackaged ? process.resourcesPath : app.getAppPath()@isProdEnv() ? "/usr/share/proton-pass" : app.getAppPath()@g' applications/pass-desktop/src/main.ts
+
+    # The host uses XDG_DATA_HOME for logs, but on Linux the desktop socket is
+    # normally in sessionData under XDG_CONFIG_HOME/Proton Pass.
+    sed -i 's@use crate::get_local_dir;@use dirs::config_dir;@; s@get_local_dir()@config_dir().ok_or_else(|| anyhow!("Failed to compute config dir"))@; s@.map(|path| path.join(name))?@.map(|path| path.join("Proton Pass").join(name))?@' \
+        applications/pass-desktop/native/host/src/ipc.rs
+
+    # Arch Linux ARM uses rustup rather than a repository rust toolchain.
     rustup toolchain install stable --profile minimal --no-self-update
-
-    # Use sharp's prebuilt ARM64 binaries even when system libvips is installed
-    export SHARP_IGNORE_GLOBAL_LIBVIPS=1
-
-    # Avoid yarn 4 npm minimal-age-gate failures during install
-    sed -i 's/^npmMinimalAgeGate: .*/npmMinimalAgeGate: 0/' .yarnrc.yml
 }
 
 build() {
-    cd WebClients-${pkgname}-${pkgver}/applications/pass-desktop
+    cd "${srcdir}/WebClients-proton-pass-${pkgver}/applications/pass-desktop"
 
-    export RUSTUP_HOME="$srcdir/.rustup" RUSTUP_TOOLCHAIN=stable SHARP_IGNORE_GLOBAL_LIBVIPS=1
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 SHARP_IGNORE_GLOBAL_LIBVIPS=1
+    export RUSTUP_HOME="${srcdir}/.rustup" CARGO_HOME="${srcdir}/.cargo" RUSTUP_TOOLCHAIN=stable
+    mkdir -p "${srcdir}/corepack-bin"
+    corepack enable --install-directory "${srcdir}/corepack-bin" pnpm
+    export PATH="${srcdir}/corepack-bin:${PATH}"
 
-    # HACK: Update to a non-broken nan version (implicitly runs yarn install)
-    yarn up -R nan
+    # The tag pins pnpm 12.13.0. Trust its frozen lockfile rather than fetching
+    # metadata for unrelated Nexus-only applications during pnpm's age scan.
+    corepack pnpm install --frozen-lockfile --trust-lockfile \
+        --filter proton-pass-desktop... --filter @proton-pass-desktop/native
 
-    yarn run build:desktop
+    rm -rf out .webpack ../rust-target
+    corepack pnpm run build:desktop
+    # Upstream build.js stages this only on macOS and Windows.
+    install -Dm755 native/target/release/proton_pass_nm_host assets/proton_pass_nm_host
 
-    # HACK: Move Rust target directory to avoid asset-relocator including it (reduces size of .asar file)
-    {
-        mv native/target ../rust-target
-        NODE_ENV=production yarn exec electron-forge package
+    mv native/target ../rust-target
+    if NODE_ENV=production corepack pnpm exec electron-forge package; then
         mv ../rust-target native/target
-    }
+    else
+        mv ../rust-target native/target
+        return 1
+    fi
 }
 
 package() {
-    cd WebClients-${pkgname}-${pkgver}/applications/pass-desktop
+    cd "${srcdir}/WebClients-proton-pass-${pkgver}/applications/pass-desktop"
 
-    # Copy the main application archive/assets
-    install -d "${pkgdir}"/usr/share/${pkgname}
-    cp -ar "out/Proton Pass-linux-"*/resources/* -t "${pkgdir}"/usr/share/${pkgname}
+    install -dm755 "${pkgdir}/usr/share/${pkgname}"
+    cp -a 'out/Proton Pass-linux-arm64/resources/.' "${pkgdir}/usr/share/${pkgname}/"
 
-    # Set up the wrapper script
-    install -d "${pkgdir}"/usr/bin
-    echo -e '#!/bin/bash\n\nexport PROTON_PASS_SYSTEM_PACKAGE=1\nexec /usr/bin/electron39 /usr/share/proton-pass/app.asar "$@"' \
-        | tee "${pkgdir}"/usr/bin/${pkgname} > /dev/null
-    chmod +x "${pkgdir}"/usr/bin/${pkgname}
+    install -dm755 "${pkgdir}/usr/bin"
+    cat > "${pkgdir}/usr/bin/${pkgname}" <<'EOF'
+#!/bin/bash
+export PROTON_PASS_SYSTEM_PACKAGE=1
+exec /usr/bin/electron44 /usr/share/proton-pass/app.asar "$@"
+EOF
+    chmod 755 "${pkgdir}/usr/bin/${pkgname}"
 
-    # Copy the desktop file (and associated icon)
-    install -Dm644 assets/logo.svg "${pkgdir}"/usr/share/pixmaps/${pkgname}.svg
-    install -Dm644 "${srcdir}"/${pkgname}.desktop -t "${pkgdir}"/usr/share/applications
+    install -Dm644 assets/logo.svg "${pkgdir}/usr/share/pixmaps/${pkgname}.svg"
+    install -Dm644 "${srcdir}/${pkgname}.desktop" "${pkgdir}/usr/share/applications/${pkgname}.desktop"
+    printf '\nMimeType=x-scheme-handler/protonpass;\n' >> "${pkgdir}/usr/share/applications/${pkgname}.desktop"
+    install -Dm644 "${srcdir}/WebClients-proton-pass-${pkgver}/LICENSE" \
+        "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }

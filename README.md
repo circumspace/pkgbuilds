@@ -7,7 +7,8 @@ own `PKGBUILD` and, where there is more to say, a `README.md`.
 | Package | Arch | Notes |
 |---|---|---|
 | [`proton-pass`](proton-pass/) | aarch64 | Proton Pass Desktop for Arch Linux ARM on system Electron |
-| [`electron39-bin`](electron39-bin/) | aarch64 | Electron 39 runtime for `proton-pass` |
+| [`electron44-bin`](electron44-bin/) | x86_64, aarch64 | Electron 44 runtime for the aarch64 `proton-pass` |
+| [`electron39-bin`](electron39-bin/) | x86_64, aarch64, armv7h | Electron 39 runtime for older packages |
 | [`proton-pass-biometrics`](proton-pass-biometrics/) | x86_64 | Proton Pass Desktop with fingerprint unlock (fprintd + polkit) |
 | [`amethyst-desktop`](amethyst-desktop/) | x86_64, aarch64 | [Amethyst](https://github.com/vitorpamplona/amethyst) Nostr client for desktop, repackaged from upstream's `.deb` releases |
 
