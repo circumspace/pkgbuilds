@@ -1,10 +1,10 @@
 diff -r a/applications/pass-desktop/native/shared/Cargo.toml b/applications/pass-desktop/native/shared/Cargo.toml
 --- a/applications/pass-desktop/native/shared/Cargo.toml	2026-10-07 20:53:11.888497443 +0200
 +++ b/applications/pass-desktop/native/shared/Cargo.toml	2026-10-07 20:53:48.302556838 +0200
-@@ -33,3 +33,7 @@
- security-framework-sys = "=2.9.1"
+@@ -38,3 +38,7 @@
  objc2-local-authentication = { version = "0.3", features = ["block2"] }
- robius-authentication = "0.3"
+ objc2-foundation = "0.3"
+ block2 = "0.6"
 +
 +[target.'cfg(target_os = "linux")'.dependencies]
 +whoami = "1"
@@ -12,7 +12,7 @@ diff -r a/applications/pass-desktop/native/shared/Cargo.toml b/applications/pass
 diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/applications/pass-desktop/native/shared/src/biometrics/linux.rs
 --- a/applications/pass-desktop/native/shared/src/biometrics/linux.rs	2026-10-07 20:53:11.889497445 +0200
 +++ b/applications/pass-desktop/native/shared/src/biometrics/linux.rs	2026-10-07 21:47:12.049621587 +0200
-@@ -1,29 +1,215 @@
+@@ -1,29 +1,219 @@
 -use anyhow::{bail, Result};
 +use std::collections::HashMap;
 +use std::process::Command;
@@ -132,6 +132,10 @@ diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/appl
 +        return Ok(());
      }
  
++    if output.status.code() == Some(3) {
++        return Err(super::PresenceCheckCancelled.into());
++    }
++
 -    fn get_secret(_key: String) -> Result<Vec<u8>> {
 -        bail!("Not implemented")
 +    log::warn!(

@@ -1,7 +1,7 @@
 # proton-pass-biometrics
 
 Source-built Arch package of [Proton Pass](https://proton.me/pass) desktop
-(`ProtonMail/WebClients`, tag `proton-pass@1.42.0`) with Linux fingerprint
+(`ProtonMail/WebClients`, tag `proton-pass@1.43.0`) with Linux fingerprint
 unlock added. The fork is carried entirely by two patches on top of the
 upstream tarball; nothing else is vendored.
 
@@ -28,6 +28,8 @@ it out on Linux in three places. The patches replace those stubs:
     login collection) via zbus, matching macOS keychain / Windows DPAPI
     semantics upstream uses. No app-level PIN prompt: the polkit/PAM path is
     the authentication, and it already has a password fallback.
+  - A dismissed polkit prompt maps to upstream's biometric-cancelled
+    response; other authorization failures remain biometric failures.
 - `0002-ts-enable-linux-biometrics.patch` — the renderer gates:
   `supportsBiometrics` in `src/app/App.tsx`, the platform factory in
   `src/lib/biometrics/index.ts` (new `biometrics.linux.ts`, same shape as
@@ -51,14 +53,28 @@ ch.proton.pass.unlock.policy     polkit action, installed to /usr/share/polkit-1
 
 ```
 makepkg -sf
-sudo pacman -U proton-pass-biometrics-1.42.0-1-x86_64.pkg.tar.zst
+sudo pacman -U proton-pass-biometrics-1.43.0-1-x86_64.pkg.tar.zst
 ```
 
 pacman will replace `proton-pass-bin` (`conflicts` + `provides`). Build
 requirements: `nodejs-lts-jod` (Node 24 — **required**, see below) and
-`rust`; pnpm 12.8.1 is fetched automatically by corepack from the tree's
-`packageManager` field. Runtime: `fprintd` + `gnome-keyring` + `polkit`,
+`rust`. Corepack fetches pnpm 12.4.1 to package the pinned logger source and
+pnpm 12.13.0 for the desktop workspace. Runtime: `fprintd` + `gnome-keyring` + `polkit`,
 with at least one enrolled finger (`fprintd-enroll`).
+
+Upstream's `.npmrc` points `@protontech` packages to Proton's Nexus registry,
+which may be unreachable; `@protontech/logger@0.0.5` is also absent from the
+public npm registry. The PKGBUILD:
+
+- Fetches the pinned [WebPackages source](https://github.com/ProtonMail/WebPackages/tree/6e219abb11d996376792dc2d0f97a0f140c8a163/packages/logger)
+  and packs the logger with pnpm 12.4.1, linking its workspace dependencies.
+- Checks the resulting tarball against the SHA-512 in the upstream lockfile,
+  then redirects that lockfile entry to the local tarball.
+- Fetches the other `@protontech` packages from the public npm registry.
+
+Neither Nexus access nor a pre-populated pnpm cache is required. When updating
+the desktop release, check the locked logger version and integrity; update the
+pinned source, tarball checksum and lockfile substitution if they change.
 
 > Node ≥25 must not drive the build: its zip stack hangs silently inside
 > electron-forge's extraction, so the build "succeeds" without ever
