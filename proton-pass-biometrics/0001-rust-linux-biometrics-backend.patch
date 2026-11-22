@@ -1,6 +1,270 @@
+diff -r a/applications/pass-desktop/native/Cargo.lock b/applications/pass-desktop/native/Cargo.lock
+--- a/applications/pass-desktop/native/Cargo.lock	2026-11-11 23:38:42.135799941 +0100
++++ b/applications/pass-desktop/native/Cargo.lock	2026-11-11 23:38:42.135904731 +0100
+@@ -123,6 +123,79 @@
+ ]
+
+ [[package]]
++name = "async-channel"
++version = "2.5.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "924ed96dd52d1b75e9c1a3e6275715fd320f5f9439fb5a4a11fa51f4221158d2"
++dependencies = [
++ "concurrent-queue",
++ "event-listener-strategy",
++ "futures-core",
++ "pin-project-lite",
++]
++
++[[package]]
++name = "async-executor"
++version = "1.14.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f426a31126c735126297bc5ea7a521263c9faff4f63ca415267ee625651c4f37"
++dependencies = [
++ "async-task",
++ "concurrent-queue",
++ "fastrand",
++ "futures-lite",
++ "pin-project-lite",
++ "slab",
++]
++
++[[package]]
++name = "async-io"
++version = "2.6.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "456b8a8feb6f42d237746d4b3e9a178494627745c3c56c6ea55d92ba50d026fc"
++dependencies = [
++ "autocfg",
++ "cfg-if",
++ "concurrent-queue",
++ "futures-io",
++ "futures-lite",
++ "parking",
++ "polling",
++ "rustix 1.1.2",
++ "slab",
++ "windows-sys 0.61.2",
++]
++
++[[package]]
++name = "async-lock"
++version = "3.5.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "0876700b0d007ad25d5508865a4259c3af9af6d296bf663a0d586d0bc3369f6f"
++dependencies = [
++ "event-listener",
++ "event-listener-strategy",
++ "pin-project-lite",
++]
++
++[[package]]
++name = "async-process"
++version = "2.5.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "fc50921ec0055cdd8a16de48773bfeec5c972598674347252c0399676be7da75"
++dependencies = [
++ "async-channel",
++ "async-io",
++ "async-lock",
++ "async-signal",
++ "async-task",
++ "blocking",
++ "cfg-if",
++ "event-listener",
++ "futures-lite",
++ "rustix 1.1.2",
++]
++
++[[package]]
+ name = "async-recursion"
+ version = "1.1.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -134,6 +207,30 @@
+ ]
+
+ [[package]]
++name = "async-signal"
++version = "0.2.14"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "52b5aaafa020cf5053a01f2a60e8ff5dccf550f0f77ec54a4e47285ac2bab485"
++dependencies = [
++ "async-io",
++ "async-lock",
++ "atomic-waker",
++ "cfg-if",
++ "futures-core",
++ "futures-io",
++ "rustix 1.1.2",
++ "signal-hook-registry",
++ "slab",
++ "windows-sys 0.61.2",
++]
++
++[[package]]
++name = "async-task"
++version = "4.7.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
++
++[[package]]
+ name = "async-trait"
+ version = "0.1.89"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -145,6 +242,12 @@
+ ]
+
+ [[package]]
++name = "atomic-waker"
++version = "1.1.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
++
++[[package]]
+ name = "autocfg"
+ version = "1.5.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -259,6 +362,19 @@
+ ]
+
+ [[package]]
++name = "blocking"
++version = "1.7.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a70e4329df6cb94385eed412ec92375c3cdd8a6e502493d1229b6414e4036dfa"
++dependencies = [
++ "async-channel",
++ "async-task",
++ "futures-io",
++ "futures-lite",
++ "piper",
++]
++
++[[package]]
+ name = "blowfish"
+ version = "0.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -1246,6 +1362,12 @@
+ checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+
+ [[package]]
++name = "hermit-abi"
++version = "0.5.3"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "e17592d60ebacc7d5e169f4663c5f84f9161cc90328abcfe8456f41e4dfcb284"
++
++[[package]]
+ name = "hex"
+ version = "0.4.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -1561,6 +1683,7 @@
+ dependencies = [
+  "bitflags 2.10.0",
+  "libc",
++ "redox_syscall",
+ ]
+
+ [[package]]
+@@ -2129,6 +2252,17 @@
+ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
+
+ [[package]]
++name = "piper"
++version = "0.2.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c835479a4443ded371d6c535cbfd8d31ad92c5d23ae9770a61bc155e4992a3c1"
++dependencies = [
++ "atomic-waker",
++ "fastrand",
++ "futures-io",
++]
++
++[[package]]
+ name = "pkcs1"
+ version = "0.8.0-rc.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -2187,6 +2321,20 @@
+ ]
+
+ [[package]]
++name = "polling"
++version = "3.11.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5d0e4f59085d47d8241c88ead0f274e8a0cb551f3625263c05eb8dd897c34218"
++dependencies = [
++ "cfg-if",
++ "concurrent-queue",
++ "hermit-abi",
++ "pin-project-lite",
++ "rustix 1.1.2",
++ "windows-sys 0.61.2",
++]
++
++[[package]]
+ name = "poly1305"
+ version = "0.9.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -2808,8 +2956,10 @@
+  "rand 0.8.5",
+  "security-framework",
+  "security-framework-sys",
++ "whoami",
+  "widestring",
+  "windows 0.54.0",
++ "zbus",
+ ]
+
+ [[package]]
+@@ -3319,6 +3469,12 @@
+ ]
+
+ [[package]]
++name = "wasite"
++version = "0.1.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "b8dad83b4f25e74f184f64c43b150b91efe7647395b42289f38e50566d82855b"
++
++[[package]]
+ name = "wasm-bindgen"
+ version = "0.2.114"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -3464,6 +3620,17 @@
+ checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
+
+ [[package]]
++name = "whoami"
++version = "1.6.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5d4a4db5077702ca3015d3d02d74974948aba2ad9e12ab7df718ee64ccd7e97d"
++dependencies = [
++ "libredox",
++ "wasite",
++ "web-sys",
++]
++
++[[package]]
+ name = "widestring"
+ version = "1.0.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -4082,8 +4249,14 @@
+ checksum = "b622b18155f7a93d1cd2dc8c01d2d6a44e08fb9ebb7b3f9e6ed101488bad6c91"
+ dependencies = [
+  "async-broadcast",
++ "async-executor",
++ "async-io",
++ "async-lock",
++ "async-process",
+  "async-recursion",
++ "async-task",
+  "async-trait",
++ "blocking",
+  "enumflags2",
+  "event-listener",
+  "futures-core",
 diff -r a/applications/pass-desktop/native/shared/Cargo.toml b/applications/pass-desktop/native/shared/Cargo.toml
---- a/applications/pass-desktop/native/shared/Cargo.toml	2026-10-07 20:53:11.888497443 +0200
-+++ b/applications/pass-desktop/native/shared/Cargo.toml	2026-10-07 20:53:48.302556838 +0200
+--- a/applications/pass-desktop/native/shared/Cargo.toml	2026-11-11 23:38:42.135970946 +0100
++++ b/applications/pass-desktop/native/shared/Cargo.toml	2026-11-11 23:38:42.135996877 +0100
 @@ -38,3 +38,7 @@
  objc2-local-authentication = { version = "0.3", features = ["block2"] }
  objc2-foundation = "0.3"
@@ -10,13 +274,13 @@ diff -r a/applications/pass-desktop/native/shared/Cargo.toml b/applications/pass
 +whoami = "1"
 +zbus = { version = "5", features = ["blocking-api"] }
 diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/applications/pass-desktop/native/shared/src/biometrics/linux.rs
---- a/applications/pass-desktop/native/shared/src/biometrics/linux.rs	2026-10-07 20:53:11.889497445 +0200
-+++ b/applications/pass-desktop/native/shared/src/biometrics/linux.rs	2026-10-07 21:47:12.049621587 +0200
+--- a/applications/pass-desktop/native/shared/src/biometrics/linux.rs	2026-11-11 23:38:42.136030171 +0100
++++ b/applications/pass-desktop/native/shared/src/biometrics/linux.rs	2026-11-11 23:38:42.136062348 +0100
 @@ -1,29 +1,219 @@
 -use anyhow::{bail, Result};
 +use std::collections::HashMap;
 +use std::process::Command;
-+
+
 +use anyhow::{anyhow, bail, Context, Result};
 +use zbus::blocking::{Connection, Proxy};
 +use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -33,42 +297,48 @@ diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/appl
 +const SECRETS_ITEM_IFACE: &str = "org.freedesktop.Secret.Item";
 +const SECRETS_PROMPT_IFACE: &str = "org.freedesktop.Secret.Prompt";
 +const SECRETS_DEFAULT_COLLECTION_PATH: &str = "/org/freedesktop/secrets/aliases/default";
- 
++
 +const POLKIT_ACTION: &str = "ch.proton.pass.unlock";
 +const SECRET_LABEL: &str = "Proton Pass";
 +const SECRET_ATTR: &str = "key";
 +
  pub struct Biometrics {}
- 
+
  impl super::BiometricsTrait for Biometrics {
      fn can_check_presence() -> Result<bool> {
 -        bail!("Not implemented")
 +        run(can_check_presence_blocking)
      }
- 
+
      fn check_presence(_handle: Vec<u8>, _reason: String) -> Result<()> {
 -        bail!("Not implemented")
 +        run(|| check_presence_blocking())
      }
- 
+
      fn new_check_presence(_reason: String) -> Result<()> {
 -        bail!("Not implemented")
 +        run(move || check_presence_blocking())
-+    }
-+
+     }
+
+-    fn get_secret(_key: String) -> Result<Vec<u8>> {
+-        bail!("Not implemented")
 +    fn get_secret(key: String) -> Result<Vec<u8>> {
 +        run(move || get_secret_blocking(key))
-+    }
-+
+     }
+
+-    fn set_secret(_key: String, _data: Vec<u8>) -> Result<()> {
+-        bail!("Not implemented")
 +
 +    fn set_secret(key: String, data: Vec<u8>) -> Result<()> {
 +        run(move || set_secret_blocking(key, data))
-+    }
-+
+     }
+
+-    fn delete_secret(_key: String) -> Result<()> {
+-        bail!("Not implemented")
 +    fn delete_secret(key: String) -> Result<()> {
 +        run(move || delete_secret_blocking(key))
-+    }
-+}
+     }
+ }
 +
 +// The napi layer exposes these trait methods as async functions, so they run
 +// on its tokio runtime. zbus' blocking API drives its own executor and panics
@@ -130,14 +400,12 @@ diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/appl
 +
 +    if output.status.success() {
 +        return Ok(());
-     }
- 
++    }
++
 +    if output.status.code() == Some(3) {
 +        return Err(super::PresenceCheckCancelled.into());
 +    }
 +
--    fn get_secret(_key: String) -> Result<Vec<u8>> {
--        bail!("Not implemented")
 +    log::warn!(
 +        "[biometrics] pkcheck exited {}: {}",
 +        output.status,
@@ -178,10 +446,8 @@ diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/appl
 +
 +    if item.as_str() != "/" {
 +        return Ok(());
-     }
- 
--    fn set_secret(_key: String, _data: Vec<u8>) -> Result<()> {
--        bail!("Not implemented")
++    }
++
 +    run_prompt(&conn, prompt)?;
 +
 +    Ok(())
@@ -197,10 +463,8 @@ diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/appl
 +        if prompt.as_str() != "/" {
 +            run_prompt(&conn, prompt)?;
 +        }
-     }
- 
--    fn delete_secret(_key: String) -> Result<()> {
--        bail!("Not implemented")
++    }
++
 +    Ok(())
 +}
 +
@@ -214,10 +478,10 @@ diff -r a/applications/pass-desktop/native/shared/src/biometrics/linux.rs b/appl
 +
 +    if dismissed {
 +        bail!("Keyring unlock prompt was cancelled");
-     }
++    }
 +
 +    Ok(())
- }
++}
 +
 +fn secret_attributes(key: &str) -> HashMap<&str, &str> {
 +    HashMap::from([(SECRET_ATTR, key)])

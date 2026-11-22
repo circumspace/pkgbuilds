@@ -30,10 +30,15 @@ it out on Linux in three places. The patches replace those stubs:
     the authentication, and it already has a password fallback.
   - A dismissed polkit prompt maps to upstream's biometric-cancelled
     response; other authorization failures remain biometric failures.
-- `0002-ts-enable-linux-biometrics.patch` — the renderer gates:
-  `supportsBiometrics` in `src/app/App.tsx`, the platform factory in
-  `src/lib/biometrics/index.ts` (new `biometrics.linux.ts`, same shape as
-  the Windows factory), and the `LockSetup.tsx` settings toggle.
+- `0002-ts-enable-linux-biometrics.patch` — the TS wiring: the platform
+  factory in `src/lib/biometrics/index.ts` (new `biometrics.linux.ts`,
+  same shape as the Windows factory, including the 1.44
+  `assertPresenceVerified` contract), the `LockSetup.tsx` settings
+  toggle, and `preload.ts`: upstream hardcodes
+  `biometricsKeyAppBound: process.platform === 'darwin'`; the fork adds
+  `linux` so the vault key persists in the keyring and biometric unlock
+  survives app restarts (chosen over upstream's no-key-at-rest model for
+  Windows-like stores).
 
 The vault unlock key (`offlineKey_biometrics::<localID>` attribute `key`)
 is stored in the keyring when the biometrics lock is enabled; unlocking

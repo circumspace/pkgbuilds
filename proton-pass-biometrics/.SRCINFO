@@ -1,11 +1,12 @@
 pkgbase = proton-pass-biometrics
 	pkgdesc = Proton Pass desktop app with Linux fingerprint (fprintd) unlock — source-built fork
-	pkgver = 1.43.0
+	pkgver = 1.43.1
 	pkgrel = 1
 	url = https://proton.me/pass
 	arch = x86_64
 	license = GPL-3.0-or-later
-	makedepends = nodejs-lts-jod
+	makedepends = nodejs-lts-krypton
+	makedepends = corepack
 	makedepends = rust
 	depends = alsa-lib
 	depends = at-spi2-core
@@ -33,23 +34,21 @@ pkgbase = proton-pass-biometrics
 	depends = nss
 	depends = pango
 	depends = polkit
-	provides = proton-pass=1.43.0
+	provides = proton-pass=1.43.1
 	provides = protonpass
 	conflicts = proton-pass
 	conflicts = protonpass
 	conflicts = proton-pass-bin
 	conflicts = proton-pass-fingerprint
-	source = proton-pass-biometrics-1.43.0.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/proton-pass@1.43.0.tar.gz
-	source = proton-webpackages-6e219abb11d996376792dc2d0f97a0f140c8a163.tar.gz::https://github.com/ProtonMail/WebPackages/archive/6e219abb11d996376792dc2d0f97a0f140c8a163.tar.gz
+	source = proton-pass-biometrics-1.43.1.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/proton-pass@1.43.1.tar.gz
 	source = proton-pass.desktop
 	source = ch.proton.pass.unlock.policy
 	source = 0001-rust-linux-biometrics-backend.patch
 	source = 0002-ts-enable-linux-biometrics.patch
-	sha512sums = 91631e52b4d704b7de5a71a912464bd9f09f2a0e59157958bc90ba9a3bedb0b68a988070b1547a789167ed096cecb05bc5e92bc18bc64984576d55a350f21fa1
-	sha512sums = 01c412d82665d95d74ec4c8ee4f907591843ec3450c4c24c00ae4d022dde1f7a28c3ac666d887aebf60ec271790e2c73fa4239e5ac05d9c836695aa6bd206319
+	sha512sums = 5f93d6e1b4c16ccd24c3b9f7d144eb0b63d0788c7f4ef7007f8063a2325eab84665cda5d7a1dc884c4176f8ae9c3671c06a9ada0de6f5058faf855108ac40767
 	sha512sums = 72f941b649c86228f5df950de50f33f346c4ed3ebb36809e14d2ad099e78752edcb1fb8a85bb8314b2c673928397177424eeb3f8f39fc1c6047c430ed93bf541
 	sha512sums = d14942d312304aa5fc76337161684ba34663da2ad9a000991ae49c11af5b750d82b1f69dddb13b1afcd6c72fae79c79beef9f11ba4201cc4b46c47f5ee6ff4c0
-	sha512sums = 13c4a0758ce263c007a773011ecc089bc6119122448ef65481a3a33721c9f03c68fbf6ea61b089a83d217551d2392795d48ff104a49f1d84121e66d6cc5fe2bb
-	sha512sums = fa9f36aca13d80b5cdf73f1e7ff60bdbd5bdce213269e39745bf479c1eab521f36cabbb55807c210e20f8fd059be395a43eba4b3ffed9a8f7a164f8fabaaf8ec
+	sha512sums = bb9602fedd0c7b4707785b0f17b5ecfb1860a6d6f374e1549a231968eb7cf14c90a92a81da1abde0aa1957bb5e1ba2897172bfbac4f381542ebc557f144da3b7
+	sha512sums = 1da8d9fa2b3df4aab380dc69d585fa928b63edc3a3a21b07380460386a101cad58e019d0df1b6b905d0de60d5531c50f24cca794af370bfab1f686fbd441e893
 
 pkgname = proton-pass-biometrics

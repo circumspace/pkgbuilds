@@ -57,9 +57,9 @@ prepare() {
     # utilities/tests/vendor trees are not needed from the tag tarball.
     sed -i 's@- applications/\*@- applications/pass\n    - applications/pass-desktop@' pnpm-workspace.yaml
 
-    # The release tarball omits utilities/enforce-pnpm; corepack already
+    # The release tarball omits utilities/repo-rules (enforce-pnpm); corepack already
     # selects the exact pnpm version declared in packageManager.
-    sed -i '\@"preinstall": "node utilities/enforce-pnpm/preinstall.mjs",@d' package.json
+    sed -i '\@"preinstall": "node --experimental-strip-types utilities/repo-rules/src/enforce-pnpm/run.ts",@d' package.json
 
     # Resolve public Proton packages from npm and the pinned logger locally.
     sed -i 's|^@protontech:registry=.*|@protontech:registry=https://registry.npmjs.org/|' .npmrc
@@ -78,13 +78,22 @@ prepare() {
 build() {
     cd "WebClients-proton-pass-${pkgver}/applications/pass-desktop"
 
+    # Node >=25 silently breaks electron-forge packaging (exit 0, no out/).
+    # pnpm and forge's child processes resolve `node` from PATH, so check the
+    # one a fresh `node` invocation resolves to, not whatever ran makepkg.
+    node_major="$(node -p 'Number(process.versions.node.split(".")[0])')"
+    if (( node_major != 24 )); then
+        echo "error: Node ${node_major} on PATH; electron-forge packaging requires Node 24 (see README)." >&2
+        return 1
+    fi
+
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     # Nested build scripts call pnpm directly. Put Corepack's shim first so
     # a different system or mise pnpm cannot override the pinned version.
     mkdir -p "${srcdir}/corepack-bin"
     corepack enable --install-directory "${srcdir}/corepack-bin" pnpm
     export PATH="${srcdir}/corepack-bin:${PATH}"
-    # corepack pins pnpm to the tree's packageManager field (12.13.0), so no
+    # corepack pins pnpm to the tree's packageManager field (12.18.0), so no
     # system pnpm is needed. nodejs-lts-jod (Node 24) is required: Node ≥25
     # hangs silently inside electron-forge's zip extraction and the build
     # completes without ever producing out/.
