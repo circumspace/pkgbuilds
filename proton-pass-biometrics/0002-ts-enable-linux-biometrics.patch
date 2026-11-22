@@ -1,7 +1,3 @@
---- a/applications/pass-desktop/src/app/App.tsx	2026-10-07 20:53:11.890497447 +0200
-+++ b/applications/pass-desktop/src/app/App.tsx	2026-10-07 20:53:48.299556833 +0200
-@@ -95,7 +95,6 @@
-+++ b/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts	2026-10-07 20:53:38.173540399 +0200
 --- a/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts
 +++ b/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts
 @@ -0,0 +1,36 @@
@@ -41,8 +37,6 @@
 +};
 +
 +export default factory;
---- a/applications/pass-desktop/src/lib/biometrics/index.ts	2026-10-07 20:53:11.890497447 +0200
-+++ b/applications/pass-desktop/src/lib/biometrics/index.ts	2026-10-07 20:53:48.300556834 +0200
 --- a/applications/pass-desktop/src/lib/biometrics/index.ts
 +++ b/applications/pass-desktop/src/lib/biometrics/index.ts
 @@ -22,6 +22,8 @@
@@ -54,8 +48,6 @@
              default:
                  return {
                      canCheckPresence: () => Promise.resolve(false),
---- a/packages/pass/components/Settings/LockSetup.tsx	2026-10-07 20:53:11.891497448 +0200
-+++ b/packages/pass/components/Settings/LockSetup.tsx	2026-10-07 20:53:48.301556836 +0200
 --- a/applications/pass-desktop/src/preload.ts
 +++ b/applications/pass-desktop/src/preload.ts
 @@ -51,8 +51,12 @@

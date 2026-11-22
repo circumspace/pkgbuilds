@@ -1,7 +1,7 @@
 # proton-pass-biometrics
 
 Source-built Arch package of [Proton Pass](https://proton.me/pass) desktop
-(`ProtonMail/WebClients`, tag `proton-pass@1.43.0`) with Linux fingerprint
+(`ProtonMail/WebClients`, tag `proton-pass@1.44.1`) with Linux fingerprint
 unlock added. The fork is carried entirely by two patches on top of the
 upstream tarball; nothing else is vendored.
 
@@ -56,36 +56,57 @@ ch.proton.pass.unlock.policy     polkit action, installed to /usr/share/polkit-1
 
 ## Build & install
 
-```
-makepkg -sf
-sudo pacman -U proton-pass-biometrics-1.43.0-1-x86_64.pkg.tar.zst
+The build is heavy (pnpm install of the whole pass-desktop tree, webpack, forge
+packaging, cargo). Default to running it on the `daemon` ssh host, not the
+laptop:
+
+```sh
+./build-on-daemon.sh    # rsyncs sources, builds remotely, fetches the package
+sudo pacman -U proton-pass-biometrics-<ver>-1-x86_64.pkg.tar.zst
 ```
 
-pacman will replace `proton-pass-bin` (`conflicts` + `provides`). Build
-requirements: `nodejs-lts-jod` (Node 24 — **required**, see below) and
-`rust`. Corepack fetches pnpm 12.4.1 to package the pinned logger source and
-pnpm 12.13.0 for the desktop workspace. Runtime: `fprintd` + `gnome-keyring` + `polkit`,
-with at least one enrolled finger (`fprintd-enroll`).
+The script provisions its own toolchain on the daemon via mise (node 24.22.3 +
+its bundled corepack, rust) and runs `makepkg -f --nodeps`, so no pacman
+packages are touched remotely.
+
+Building locally instead: `makepkg -s` installs missing official-repository
+dependencies automatically.
+
+```sh
+makepkg -sf
+sudo pacman -U proton-pass-biometrics-1.44.1-1-x86_64.pkg.tar.zst
+```
+
+Every runtime dependency in the `PKGBUILD` is available from Arch's `core` or
+`extra` repository. The build dependencies are all in `extra`:
+
+- `nodejs-lts-krypton`: Node 24; upstream requires Node `^24.22.1`. If the
+  repository copy is older than 24.22.1 (pnpm enforces `engines` strictly,
+  `.npmrc` sets `engine-strict=true`), build under a newer Node 24, e.g.
+  `mise exec node@24.22 -- makepkg -f --nodeps` (see the Node note below).
+- `corepack`: provides the `corepack` command and fetches the upstream-pinned
+  pnpm 12.18.0 release.
+- `rust`: builds the native modules; upstream declares no minimum Rust version.
+
+No prerequisite package needs an AUR or manual installation. During the build,
+pnpm downloads locked JavaScript dependencies from npm, and Cargo downloads
+locked crates from crates.io. Runtime fingerprint unlock requires `fprintd`,
+`gnome-keyring`, `polkit`, and at least one enrolled finger (`fprintd-enroll`).
+
+Installing the package replaces `proton-pass-bin` through its `conflicts` and
+`provides` metadata.
 
 Upstream's `.npmrc` points `@protontech` packages to Proton's Nexus registry,
-which may be unreachable; `@protontech/logger@0.0.5` is also absent from the
-public npm registry. The PKGBUILD:
+but all are also available on the public npm registry, including
+`@protontech/logger@1.0.0`.
 
-- Fetches the pinned [WebPackages source](https://github.com/ProtonMail/WebPackages/tree/6e219abb11d996376792dc2d0f97a0f140c8a163/packages/logger)
-  and packs the logger with pnpm 12.4.1, linking its workspace dependencies.
-- Checks the resulting tarball against the SHA-512 in the upstream lockfile,
-  then redirects that lockfile entry to the local tarball.
-- Fetches the other `@protontech` packages from the public npm registry.
-
-Neither Nexus access nor a pre-populated pnpm cache is required. When updating
-the desktop release, check the locked logger version and integrity; update the
-pinned source, tarball checksum and lockfile substitution if they change.
-
-> Node ≥25 must not drive the build: its zip stack hangs silently inside
-> electron-forge's extraction, so the build "succeeds" without ever
-> producing `out/`. If your default `node` is newer, prefix makepkg with
-> the Node 24 one, e.g. `mise exec node@24 -- makepkg` or use the
-> system `nodejs-lts-jod`.
+> Node ≥25 must not drive the build: its packaging path exits silently
+> inside electron-forge (exit 0, no `out/`). pnpm and forge's child
+> processes resolve `node` from PATH, so `mise exec node@24 -- makepkg`
+> is NOT sufficient when `/usr/bin/node` is ≥25 — put the Node 24 bin
+> directory at the front of PATH explicitly, or install the system
+> `nodejs-lts-krypton`. The PKGBUILD's build() guards against a wrong
+> `node` before the long install.
 
 ## Assumptions
 
