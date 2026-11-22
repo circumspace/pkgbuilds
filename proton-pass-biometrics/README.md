@@ -57,17 +57,20 @@ ch.proton.pass.unlock.policy     polkit action, installed to /usr/share/polkit-1
 ## Build & install
 
 The build is heavy (pnpm install of the whole pass-desktop tree, webpack, forge
-packaging, cargo). Default to running it on the `daemon` ssh host, not the
-laptop:
+packaging, cargo) — do not run it on the laptop. The intended setup is a
+podman build container (rootless, reproducible, no host-state dependencies).
+Until that container exists, a stopgap script builds on a private build host
+that is not part of this repo's published surface — see `AGENTS.md` in the
+repository root:
 
 ```sh
-./build-on-daemon.sh    # rsyncs sources, builds remotely, fetches the package
+./build-on-daemon.sh    # stopgap: rsyncs sources, builds remotely, fetches the package
 sudo pacman -U proton-pass-biometrics-<ver>-1-x86_64.pkg.tar.zst
 ```
 
-The script provisions its own toolchain on the daemon via mise (node 24.22.3 +
+The script provisions its own toolchain via mise (node 24.22.3 +
 its bundled corepack, rust) and runs `makepkg -f --nodeps`, so no pacman
-packages are touched remotely.
+packages are touched on the build host.
 
 Building locally instead: `makepkg -s` installs missing official-repository
 dependencies automatically.
