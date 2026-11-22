@@ -1,22 +1,11 @@
-diff -r a/applications/pass-desktop/src/app/App.tsx b/applications/pass-desktop/src/app/App.tsx
---- a/applications/pass-desktop/src/app/App.tsx	2026-10-07 20:53:11.890497447 +0200
-+++ b/applications/pass-desktop/src/app/App.tsx	2026-10-07 20:53:48.299556833 +0200
-@@ -95,7 +95,6 @@
-     generateOTP: (payload) => (payload.type === 'uri' ? generateTOTPCode(payload.totpUri) : null),
- 
-     supportsBiometrics: async () => {
--        if (BUILD_TARGET === 'linux') return false;
-         return window.ctxBridge?.canCheckPresence() ?? false;
-     },
- 
-diff -r a/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts b/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts
---- a/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts	1970-01-01 01:00:00.000000000 +0100
-+++ b/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts	2026-10-07 20:53:38.173540399 +0200
-@@ -0,0 +1,35 @@
+--- a/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts
++++ b/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts
+@@ -0,0 +1,36 @@
 +import { uint8ArrayToBinaryString } from '@proton/shared/lib/helpers/encoding';
 +
 +import { biometric as linuxBiometrics } from 'proton-pass-desktop-native';
 +
++import { assertPresenceVerified } from './errors';
 +import type { BiometricsFactory, BiometricsPlatformHandler } from './types';
 +
 +const factory: BiometricsFactory = (getWindow) => {
@@ -24,7 +13,7 @@ diff -r a/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts b/app
 +     * authentication agent owns its own prompt window. Pass it through anyway. */
 +    const checkPresence = async (reason = 'Proton Pass wants to unlock') => {
 +        const handle = getWindow()?.getNativeWindowHandle();
-+        await linuxBiometrics.checkPresence(handle ?? Buffer.alloc(0), reason);
++        assertPresenceVerified(await linuxBiometrics.checkPresence(handle ?? Buffer.alloc(0), reason));
 +    };
 +
 +    const biometrics: BiometricsPlatformHandler = {
@@ -48,10 +37,8 @@ diff -r a/applications/pass-desktop/src/lib/biometrics/biometrics.linux.ts b/app
 +};
 +
 +export default factory;
-\ No newline at end of file
-diff -r a/applications/pass-desktop/src/lib/biometrics/index.ts b/applications/pass-desktop/src/lib/biometrics/index.ts
---- a/applications/pass-desktop/src/lib/biometrics/index.ts	2026-10-07 20:53:11.890497447 +0200
-+++ b/applications/pass-desktop/src/lib/biometrics/index.ts	2026-10-07 20:53:48.300556834 +0200
+--- a/applications/pass-desktop/src/lib/biometrics/index.ts
++++ b/applications/pass-desktop/src/lib/biometrics/index.ts
 @@ -22,6 +22,8 @@
                  return (require('./biometrics.windows').default as BiometricsFactory)(getWindow);
              case 'darwin':
@@ -61,10 +48,26 @@ diff -r a/applications/pass-desktop/src/lib/biometrics/index.ts b/applications/p
              default:
                  return {
                      canCheckPresence: () => Promise.resolve(false),
-diff -r a/packages/pass/components/Settings/LockSetup.tsx b/packages/pass/components/Settings/LockSetup.tsx
---- a/packages/pass/components/Settings/LockSetup.tsx	2026-10-07 20:53:11.891497448 +0200
-+++ b/packages/pass/components/Settings/LockSetup.tsx	2026-10-07 20:53:48.301556836 +0200
-@@ -25,7 +25,7 @@
+--- a/applications/pass-desktop/src/preload.ts
++++ b/applications/pass-desktop/src/preload.ts
+@@ -51,8 +51,12 @@
+     /* secrets */
+     /** Only the macOS keychain scopes a stored item to the requesting app signature.
+      * On Windows any same-user process can read the store — and drive Hello — so no
+-     * key material may live there. */
+-    biometricsKeyAppBound: process.platform === 'darwin',
++     * key material may live there.
++     *
++     * Linux fork: the biometrics key lives in the Secret Service login collection,
++     * a per-user store unlocked through PAM — not app-signature-bound, but the same
++     * per-user trust boundary macOS relies on. */
++    biometricsKeyAppBound: process.platform === 'darwin' || process.platform === 'linux',
+     canCheckPresence: () => invoke('biometrics:canCheckPresence'),
+     checkPresence: (reason) => invoke('biometrics:checkPresence', reason),
+     getSecret: (key, version) => invoke('biometrics:getSecret', key, version),
+--- a/packages/pass/components/Settings/LockSetup.tsx
++++ b/packages/pass/components/Settings/LockSetup.tsx
+@@ -27,7 +27,7 @@
       * or if lockMode is already biometrics (eg. when rolling back the flag)
       */
      const showBiometricsOption =

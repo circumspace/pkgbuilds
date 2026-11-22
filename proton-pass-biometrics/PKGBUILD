@@ -1,12 +1,9 @@
 # Maintainer: dh
-# Fork of Proton Pass (ProtonMail/WebClients proton-pass@1.43.0) adding Linux
+# Fork of Proton Pass (ProtonMail/WebClients proton-pass@1.43.1) adding Linux
 # fingerprint unlock through fprintd/polkit. Patches carry the fork delta.
 
-_logger_commit=6e219abb11d996376792dc2d0f97a0f140c8a163
-_logger_sha512=ca13941f08c6ff0247b5d1802c8ab66ddded4ac37fc9f4f760aa924f644b5b82707b10b36cd14db69c7f0fd60da1c74a2b0df00da784389aee1d252408047b35
-
 pkgname=proton-pass-biometrics
-pkgver=1.43.0
+pkgver=1.44.1
 pkgrel=1
 pkgdesc='Proton Pass desktop app with Linux fingerprint (fprintd) unlock — source-built fork'
 arch=('x86_64')
@@ -16,36 +13,21 @@ depends=('alsa-lib' 'at-spi2-core' 'cairo' 'dbus' 'expat' 'fprintd' 'glib2' 'gno
          'glibc' 'gtk3' 'libcups' 'libdrm' 'libx11' 'libxcb' 'libxcomposite' 'libxdamage'
          'libxext' 'libxfixes' 'libxkbcommon' 'libxrandr' 'libxshmfence' 'mesa' 'nspr' 'nss'
          'pango' 'polkit')
-makedepends=('nodejs-lts-jod' 'rust')
+makedepends=('nodejs-lts-krypton' 'corepack' 'rust')
 provides=("proton-pass=${pkgver}" 'protonpass')
 conflicts=('proton-pass' 'protonpass' 'proton-pass-bin' 'proton-pass-fingerprint')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ProtonMail/WebClients/archive/refs/tags/proton-pass@${pkgver}.tar.gz"
-        "proton-webpackages-${_logger_commit}.tar.gz::https://github.com/ProtonMail/WebPackages/archive/${_logger_commit}.tar.gz"
         'proton-pass.desktop'
         'ch.proton.pass.unlock.policy'
         '0001-rust-linux-biometrics-backend.patch'
         '0002-ts-enable-linux-biometrics.patch')
-sha512sums=('91631e52b4d704b7de5a71a912464bd9f09f2a0e59157958bc90ba9a3bedb0b68a988070b1547a789167ed096cecb05bc5e92bc18bc64984576d55a350f21fa1'
-            '01c412d82665d95d74ec4c8ee4f907591843ec3450c4c24c00ae4d022dde1f7a28c3ac666d887aebf60ec271790e2c73fa4239e5ac05d9c836695aa6bd206319'
+sha512sums=('690fc26fd01db1214f53842459343973bd6e36bd570f526c048e18fbcafd52f2f2a713c8feb45f3c9192bf66728cc3977966e064c40ff9a23a268b5e44554acc'
             '72f941b649c86228f5df950de50f33f346c4ed3ebb36809e14d2ad099e78752edcb1fb8a85bb8314b2c673928397177424eeb3f8f39fc1c6047c430ed93bf541'
             'd14942d312304aa5fc76337161684ba34663da2ad9a000991ae49c11af5b750d82b1f69dddb13b1afcd6c72fae79c79beef9f11ba4201cc4b46c47f5ee6ff4c0'
-            '13c4a0758ce263c007a773011ecc089bc6119122448ef65481a3a33721c9f03c68fbf6ea61b089a83d217551d2392795d48ff104a49f1d84121e66d6cc5fe2bb'
-            'fa9f36aca13d80b5cdf73f1e7ff60bdbd5bdce213269e39745bf479c1eab521f36cabbb55807c210e20f8fd059be395a43eba4b3ffed9a8f7a164f8fabaaf8ec')
+            'bb9602fedd0c7b4707785b0f17b5ecfb1860a6d6f374e1549a231968eb7cf14c90a92a81da1abde0aa1957bb5e1ba2897172bfbac4f381542ebc557f144da3b7'
+            'fc2206f41215d89d84e7e43ef3e8d459ad41024783693f370478c32c93583900d2945a0fa89e4d4a9d5d00e91804c4684b1c195c5177c4e2c6684ab5d86349a9')
 
 prepare() {
-    # Reproduce the logger tarball omitted from the public npm registry.
-    # pnpm pack resolves workspace:* entries from these local package links.
-    cd "${srcdir}/WebPackages-${_logger_commit}/packages/logger"
-    mkdir -p node_modules/@protontech
-    local dep
-    for dep in crypto eslint-plugin-enforce-uint8array-arraybuffer oxlint-config prettier-config typescript-config; do
-        ln -sfn "../../../${dep}" "node_modules/@protontech/${dep}"
-    done
-    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm@12.4.1 pack \
-        --pack-destination "${srcdir}/WebClients-proton-pass-${pkgver}"
-    printf '%s  %s\n' "${_logger_sha512}" \
-        "${srcdir}/WebClients-proton-pass-${pkgver}/protontech-logger-0.0.5.tgz" | sha512sum -c
-
     cd "${srcdir}/WebClients-proton-pass-${pkgver}"
 
     # Linux biometrics backend (fprintd presence check, polkit-gated
@@ -57,17 +39,19 @@ prepare() {
     # utilities/tests/vendor trees are not needed from the tag tarball.
     sed -i 's@- applications/\*@- applications/pass\n    - applications/pass-desktop@' pnpm-workspace.yaml
 
-    # The release tarball omits utilities/enforce-pnpm; corepack already
+    # The release tarball omits utilities/repo-rules (enforce-pnpm); corepack already
     # selects the exact pnpm version declared in packageManager.
-    sed -i '\@"preinstall": "node utilities/enforce-pnpm/preinstall.mjs",@d' package.json
+    sed -i '\@"preinstall": "node --experimental-strip-types utilities/repo-rules/src/enforce-pnpm/run.ts",@d' package.json
 
-    # Resolve public Proton packages from npm and the pinned logger locally.
+    # Resolve public Proton packages from npm (logger 1.0.0 is on the public registry).
     sed -i 's|^@protontech:registry=.*|@protontech:registry=https://registry.npmjs.org/|' .npmrc
-    sed -i 's@\(integrity: sha512-yhOUHwjG/wJHtdGALIq2bd3tSsN/yfT3YKqST2RLW4JwexCzbNFNtpx/D9YNocdKKw3wDaeEOJruHSUkCAR7NQ==\)}@\1, tarball: file:protontech-logger-0.0.5.tgz}@' pnpm-lock.yaml
 
     # Bypass native/build.js (rustup target downloads + npm): build the napi
-    # module and host binary directly with cargo against the patched `shared`.
-    sed -i 's@"build": "node build.js"@"build": "pnpm run build:napi \&\& pnpm run build:host"@' \
+    # module and host binary directly, requiring the patched Cargo.lock.
+    sed -i \
+        -e 's@"build": "node build.js"@"build": "pnpm run build:napi \&\& pnpm run build:host"@' \
+        -e 's@"build:host": "cargo build @"build:host": "cargo build --locked @' \
+        -e 's@"build:napi": "\(napi build[^"]*\)"@"build:napi": "\1 -- --locked"@' \
         applications/pass-desktop/native/package.json
 
     # Forge is run manually in build() so the cargo target dir can be moved
@@ -78,14 +62,23 @@ prepare() {
 build() {
     cd "WebClients-proton-pass-${pkgver}/applications/pass-desktop"
 
+    # Node >=25 silently breaks electron-forge packaging (exit 0, no out/).
+    # pnpm and forge's child processes resolve `node` from PATH, so check the
+    # one a fresh `node` invocation resolves to, not whatever ran makepkg.
+    node_major="$(node -p 'Number(process.versions.node.split(".")[0])')"
+    if (( node_major != 24 )); then
+        echo "error: Node ${node_major} on PATH; electron-forge packaging requires Node 24 (see README)." >&2
+        return 1
+    fi
+
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     # Nested build scripts call pnpm directly. Put Corepack's shim first so
     # a different system or mise pnpm cannot override the pinned version.
     mkdir -p "${srcdir}/corepack-bin"
     corepack enable --install-directory "${srcdir}/corepack-bin" pnpm
     export PATH="${srcdir}/corepack-bin:${PATH}"
-    # corepack pins pnpm to the tree's packageManager field (12.13.0), so no
-    # system pnpm is needed. nodejs-lts-jod (Node 24) is required: Node ≥25
+    # corepack pins pnpm to the tree's packageManager field (12.18.0), so no
+    # system pnpm is needed. nodejs-lts-krypton (Node 24 LTS) is required: Node ≥25
     # hangs silently inside electron-forge's zip extraction and the build
     # completes without ever producing out/.
     # --trust-lockfile: pnpm 12's supply-chain scan fetches publish metadata
